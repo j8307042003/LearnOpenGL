@@ -1,0 +1,10 @@
+# Build Folders
+bin/
+obj/
+sln/
+Debug/
+DebugDll/
+working/*.exe
+
+# Sublime Files
+*.sublime-workspace

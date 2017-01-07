@@ -1,0 +1,90 @@
+#version 330 core
+
+
+in vec3 fragColor;
+in vec2 TexCoord;
+// Ouput data
+out vec4 color;
+
+
+uniform vec4 uColor ;
+// Texture samplers
+uniform sampler2D ourTexture0;
+uniform sampler2D ourTexture1;
+
+void main()
+{
+
+					/*
+					// 8*8 bayer matrix dithering
+				//https://en.wikipedia.org/wiki/Ordered_dithering
+
+				mat4 bayer_matrix1 = mat4(
+												  float4(4, 52, 16, 64) / 64.0,
+												  float4(36, 20, 48, 32) / 64.0,
+											      float4(12, 60, 8, 56) / 64.0,
+												  float4(44, 28, 40, 24) / 64.0
+				);
+
+				mat4 bayer_matrix2 = mat4(
+													  float4(1, 49, 13, 61) / 64.0,
+													  float4(33, 17, 45, 29) / 64.0,
+													  float4(9, 57, 5, 53) / 64.0,
+													  float4(41, 25, 37, 21) / 64.0
+
+				);
+
+			mat4 bayer_matrix3 = mat4(
+													float4(3, 51, 15, 63) / 64.0,
+													float4(35, 19, 47, 31) / 64.0,
+													float4(11, 59, 7, 55) / 64.0,
+													float4(43, 27, 39, 23) / 64.0
+
+				);
+
+			mat4 bayer_matrix4 = mat4(
+													float4(2, 50, 14, 62) / 64.0,
+													float4(34, 18, 46, 30) / 64.0,
+													float4(10, 58, 6, 54) / 64.0,
+													float4(42, 26, 38, 22) / 64.0
+				);
+
+
+
+
+				// sample the texture				
+				float dist = length(gl_fragcoord, _WorldSpaceCameraPos);				
+
+				int indexX = screenPos.x % 8;
+				int indexY = screenPos.y % 8;	
+
+				if (indexX < 4 && indexY < 4) {			// 2
+					if (dist < (bayer_matrix2[indexX][indexY])*_Radius+0.2) {
+						discard ;
+					}
+				} else if (indexX > 3 && indexY < 4) { // 1
+					if (dist < (bayer_matrix1[indexX-4][indexY] )*_Radius+0.2) {
+						discard ;
+					}
+
+				} else if (indexX < 4 && indexY > 3) { // 3
+					if (dist < (bayer_matrix3[indexX ][indexY-4])*_Radius+0.2) {
+						discard ;
+					}
+
+				} else if (indexX > 3 && indexY > 3 ) { // 4
+					if (dist  < ( bayer_matrix4[indexX - 4][indexY-4] )*_Radius+0.2) {
+						discard ;
+					}
+				}
+				
+				*/
+
+	// Linearly interpolate between both textures (second texture is only slightly combined)
+	color = mix(texture(ourTexture0, TexCoord), texture(ourTexture1, TexCoord), 0.2);
+	//color = texture( ourTexture1, TexCoord ) ;
+
+}
+
+
+
