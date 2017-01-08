@@ -29,6 +29,12 @@ namespace common {
 	void Mesh::Draw( Shader shader ) {
 		GLuint diffuseNr = 1;
 		GLuint specularNr = 1;
+
+		GLint matShineLoc = glGetUniformLocation(shader.program, "material.shininess");
+
+
+		glUniform1f(matShineLoc, 32.0f);
+
 		for (GLuint i = 0; i < this->textures.size(); i++)
 		{
 			glActiveTexture(GL_TEXTURE0 + i); // Activate proper texture unit before binding
@@ -42,6 +48,8 @@ namespace common {
 				ss << specularNr++; // Transfer GLuint to stream
 			number = ss.str();
 
+
+			//std::cout << ("material." + name + number).c_str()<< std::endl;
 			glUniform1f(glGetUniformLocation(shader.program, ("material." + name + number).c_str()), i);
 			glBindTexture(GL_TEXTURE_2D, this->textures[i].id);
 		}
