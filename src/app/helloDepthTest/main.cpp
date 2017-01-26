@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
+#include <map>
 
 #include "SOIL\SOIL.h"
 
@@ -31,7 +32,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void Do_Movement();
-GLuint loadTexture(GLchar* path);
+GLuint loadTexture(GLchar* path, GLboolean alpha = false);
 
 // Camera
 common::Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
@@ -73,6 +74,9 @@ int main()
 	// Setup some OpenGL options
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_STENCIL_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 
 	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -141,6 +145,45 @@ int main()
 		-5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
 		5.0f,  -0.5f, -5.0f,  2.0f, 2.0f
 	};
+
+
+	GLfloat transparentVertices[] = {
+		// Positions         // Texture Coords (swapped y coordinates because texture is flipped upside down)
+		0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+		0.0f, -0.5f,  0.0f,  0.0f,  1.0f,
+		1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+
+		0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+		1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+		1.0f,  0.5f,  0.0f,  1.0f,  0.0f
+	};
+
+
+	std::vector<glm::vec3> vegetation;
+	vegetation.push_back(glm::vec3(-1.5f, 0.0f, -0.48f));
+	vegetation.push_back(glm::vec3(1.5f, 0.0f, 0.51f));
+	vegetation.push_back(glm::vec3(0.0f, 0.0f, 0.7f));
+	vegetation.push_back(glm::vec3(-0.3f, 0.0f, -2.3f));
+	vegetation.push_back(glm::vec3(0.5f, 0.0f, -0.6f));
+
+
+	GLuint vegetationVAO, vegetationVBO;
+	glGenVertexArrays(1, &vegetationVAO);
+	glGenBuffers(1, &vegetationVBO);
+	glBindVertexArray(vegetationVAO);
+	glBindBuffer(GL_ARRAY_BUFFER,vegetationVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(transparentVertices), &transparentVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof( GLfloat )));
+	glBindVertexArray(0);
+
+
+
+
+
+
 	// Setup cube VAO
 	GLuint cubeVAO, cubeVBO;
 	glGenVertexArrays(1, &cubeVAO);
@@ -169,6 +212,7 @@ int main()
 	// Load textures
 	GLuint cubeTexture = loadTexture("container2.png");
 	GLuint floorTexture = loadTexture("87face.png");
+	GLuint grassTexture = loadTexture("texture/window.png", true);
 #pragma endregion
 
 	// Game loop
@@ -229,9 +273,20 @@ int main()
 		glfwPollEvents();
 		Do_Movement();
 
+
 		// Clear the colorbuffer
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+
+		// sort trasparent object
+		std::map<float, glm::vec3> sorted;
+		for (GLuint i = 0; i < vegetation.size(); i++) // windows contains all window positions
+		{
+			GLfloat distance = glm::length(camera.position - vegetation[i]);
+			sorted[distance] = vegetation[i];
+		}
+
 
 		// Set uniforms
 		shaderSingleColor.use();
@@ -253,7 +308,9 @@ int main()
 		model = glm::mat4();
 		glUniformMatrix4fv(glGetUniformLocation(shader.program, "model"), 1, GL_FALSE, glm::value_ptr(model));
 		glDrawArrays(GL_TRIANGLES, 0, 6);
-		glBindVertexArray(0);
+		glBindVertexArray(0);		
+
+
 
 		// == =============
 		// 1st. Render pass, draw objects as normal, filling the stencil buffer
@@ -269,6 +326,19 @@ int main()
 		model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
 		glUniformMatrix4fv(glGetUniformLocation(shader.program, "model"), 1, GL_FALSE, glm::value_ptr(model));
 		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
+
+
+
+		glBindVertexArray(vegetationVAO);
+		glBindTexture(GL_TEXTURE_2D, grassTexture);
+		for (std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
+		{
+			model = glm::mat4();
+			model = glm::translate(model, it->second);
+			glUniformMatrix4fv(glGetUniformLocation(shader.program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
 		glBindVertexArray(0);
 
 		// == =============
@@ -309,21 +379,22 @@ int main()
 // This function loads a texture from file. Note: texture loading functions like these are usually 
 // managed by a 'Resource Manager' that manages all resources (like textures, models, audio). 
 // For learning purposes we'll just define it as a utility function.
-GLuint loadTexture(GLchar* path)
+GLuint loadTexture(GLchar* path, GLboolean alpha )
 {
 	//Generate texture ID and load texture data 
 	GLuint textureID;
 	glGenTextures(1, &textureID);
 	int width, height;
-	unsigned char* image = SOIL_load_image(path, &width, &height, 0, SOIL_LOAD_RGB);
+	unsigned char* image = SOIL_load_image(path, &width, &height, 0, alpha ? SOIL_LOAD_RGBA : SOIL_LOAD_RGB);
 	// Assign texture to ID
 	glBindTexture(GL_TEXTURE_2D, textureID);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+	glTexImage2D(GL_TEXTURE_2D, 0, alpha ? GL_RGBA : GL_RGB, width, height, 0, alpha ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, image);
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 	// Parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, alpha ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, alpha ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D, 0);
