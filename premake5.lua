@@ -16,7 +16,9 @@ local consoleApps = {
 "helloWindow",
 "helloLight",
 "helloLoader",
-"helloDepthTest"
+"helloDepthTest",
+"helloFramebuffer",
+"helloCubeMap"
 
 }
 
