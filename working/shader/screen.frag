@@ -7,6 +7,4 @@ uniform sampler2D screenTexture;
 void main()
 { 
     color = texture(screenTexture, TexCoords) ;
-    float aver = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
-    color = vec4( aver,aver,aver,1.0 ) ;
 }

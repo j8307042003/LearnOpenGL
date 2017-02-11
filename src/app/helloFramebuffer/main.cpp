@@ -90,7 +90,7 @@ int main()
 							// Setup and compile our shaders
 	common::Shader shader("shader/advanced.vs", "shader/advanced.frag");
 	common::Shader shaderSingleColor("shader/advanced.vs", "shader/singleColor.frag");
-	common::Shader screenShader("shader/screen.vs", "shader/kernel.frag");
+	common::Shader screenShader("shader/screen.vs", "shader/screen.frag");
 
 
 
@@ -185,6 +185,8 @@ int main()
 	vegetation.push_back(glm::vec3(0.5f, 0.0f, -0.6f));
 
 
+
+
 	GLuint vegetationVAO, vegetationVBO;
 	glGenVertexArrays(1, &vegetationVAO);
 	glGenBuffers(1, &vegetationVBO);
@@ -245,6 +247,8 @@ int main()
 	GLuint cubeTexture = loadTexture("container2.png");
 	GLuint floorTexture = loadTexture("87face.png");
 	GLuint grassTexture = loadTexture("texture/window.png", true);
+
+
 
 	//framebuffer
 	GLuint framebuffer;
@@ -407,6 +411,9 @@ GLuint loadTexture(GLchar* path, GLboolean alpha )
 	return textureID;
 
 }
+
+
+
 
 #pragma region "User input"
 

@@ -1,6 +1,7 @@
 #version 330 core
 out vec4 color;
 
+
 float near = 1.0; 
 float far  = 100.0; 
   

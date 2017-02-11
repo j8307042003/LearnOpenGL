@@ -33,6 +33,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void Do_Movement();
 GLuint loadTexture(GLchar* path, GLboolean alpha = false);
+GLuint loadCubemap(std::vector<const GLchar*>  faces);
 GLuint generateAttachmentTexture(GLboolean depth, GLboolean stencil);
 
 // Camera
@@ -44,73 +45,6 @@ bool firstMouse = true;
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
 
-template <typename T>
-bool compare(T a, T b) {
-	if (a > b)
-		return true;
-	else return false;
-
-
-}
-
-
-class cl {
-public:
-	int i;
-	int j;
-	cl() {
-		i = 2;
-	};
-	
-	void z() {
-		i + 87;
-		i + 1;
-
-	}
-
-	void x() {
-		i + 87;
-		i + 1;
-
-	}
-
-	void c() {
-		i + 87;
-		i + 1;
-
-	}
-
-	/*
-	void* operator new (std::size_t size) throw (std::bad_alloc) {
-		void * p = malloc(size);
-		return p;
-	}*/
-	
-};
-
-void addr(int *i) {
-
-	(*i)++;
-}
-
-void ref() {
-
-}
-
-void sw(int * &i, int * &j) {
-	int * tmp = i;
-	i = j;
-	j = tmp;
-
-}
-
-
-class player {
-public :
-	int hp;
-	int exp;
-
-};
 
 // The MAIN function, from here we start our application and run our Game loop
 int main()
@@ -156,51 +90,10 @@ int main()
 							// Setup and compile our shaders
 	common::Shader shader("shader/advanced.vs", "shader/advanced.frag");
 	common::Shader shaderSingleColor("shader/advanced.vs", "shader/singleColor.frag");
-	common::Shader screenShader("shader/screen.vs", "shader/kernel.frag");
+	common::Shader screenShader("shader/screen.vs", "shader/screen.frag");
+	common::Shader skyboxShader("shader/skybox.vs", "shader/skybox.frag");
 
-
-	int a = 5;
-	int b = 4;
-	std::cout << "result : " << compare(b,a) << "\n";
-	char greeting[] = "Hello";
-	const char *p = greeting;
-	char* const p2 = greeting;
-	const char* const p3 = greeting;
-
-	p = greeting;
-	//*p = *p;
-	*p2 = *p;
-
-	char * sec = "123";
-
-	cl * c = new cl();
-
-	GLfloat t1;
-	GLfloat t2;
-	int i = INT_MAX;
-	int j = 0;
-	t1 = glfwGetTime();
-
-	for (int i = 0; i < 1000000; i++) {
-		c = new cl();
-	}
-	std::cout << c->i << "\n";
-	t2 = glfwGetTime();
-
-
-
-
-	std::cout << t2 - t1 << "\n";
-
-	int *z = new int ;
-	int *x = new int;
-	*z = 6;
-	*x = 9;
-	addr(z);
-	sw(z, x);
-	std::cout << *z << "\n";
-
-	std::cout << p;
+	
 
 
 #pragma region "object_initialization"
@@ -208,57 +101,105 @@ int main()
 	GLfloat cubeVertices[] = {
 		// Positions          // Normals           // Texture Coords
 		// Back face
-		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // Bottom-left
-		0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // bottom-right    
-		0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right              
-		0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
-		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // bottom-left                
+		-0.5f, -0.5f, -0.5f, 0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // Bottom-left
+		0.5f, -0.5f, -0.5f, 0.0f,  0.0f, -1.0f, 1.0f, 0.0f, // bottom-right    
+		0.5f,  0.5f, -0.5f, 0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right              
+		0.5f,  0.5f, -0.5f, 0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
+		-0.5f,  0.5f, -0.5f, 0.0f,  0.0f, -1.0f,  0.0f, 1.0f, // top-left
+		-0.5f, -0.5f, -0.5f, 0.0f,  0.0f, -1.0f,  0.0f, 0.0f, // bottom-left                
 		// Front face
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
-		0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
-		0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-right        
-		0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
-		-0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // top-left        
+		-0.5f, -0.5f,  0.5f, 0.0f,  0.0f, 1.0f, 0.0f, 0.0f, // bottom-left
+		0.5f,  0.5f,  0.5f, 0.0f,  0.0f, 1.0f, 1.0f, 1.0f, // top-right
+		0.5f, -0.5f,  0.5f, 0.0f,  0.0f, 1.0f, 1.0f, 0.0f, // bottom-right        
+		0.5f,  0.5f,  0.5f, 0.0f,  0.0f, 1.0f, 1.0f, 1.0f, // top-right
+		-0.5f, -0.5f,  0.5f, 0.0f,  0.0f, 1.0f,  0.0f, 0.0f, // bottom-left
+		-0.5f,  0.5f,  0.5f, 0.0f,  0.0f, 1.0f, 0.0f, 1.0f, // top-left        
 		// Left face
-		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
-		-0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-left       
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
-		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
+		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
+		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
+		-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-left       
+		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
+		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
+		-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-right
 		// Right face
-		0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
-		0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right      
-		0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right          
-		0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
-		0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
-		0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
+		0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
+		0.5f,  0.5f, -0.5f,   1.0f,  0.0f,  0.0f,1.0f, 1.0f, // top-right      
+		0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right          
+		0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
+		0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-left
+		0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
 		// Bottom face          
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
-		0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
-		0.5f, -0.5f, -0.5f,  1.0f, 1.0f, // top-left        
-		0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
+		-0.5f, -0.5f, -0.5f, 0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
+		0.5f, -0.5f,  0.5f, 0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
+		0.5f, -0.5f, -0.5f, 0.0f, -1.0f,  0.0f, 1.0f, 1.0f, // top-left        
+		0.5f, -0.5f,  0.5f, 0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
+		-0.5f, -0.5f, -0.5f, 0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
+		-0.5f, -0.5f,  0.5f, 0.0f, -1.0f,  0.0f, 0.0f, 0.0f, // bottom-right
 		// Top face
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
-		0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
-		0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right                 
-		0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
-		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f, // bottom-left  
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f  // top-left    
+		-0.5f,  0.5f, -0.5f, 0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
+		0.5f,  0.5f, -0.5f, 0.0f,  1.0f,  0.0f, 1.0f, 1.0f, // top-right
+		0.5f,  0.5f,  0.5f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right                 
+		0.5f,  0.5f,  0.5f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
+		-0.5f,  0.5f,  0.5f, 0.0f,  1.0f,  0.0f, 0.0f, 0.0f, // bottom-left  
+		-0.5f,  0.5f, -0.5f, 0.0f,  1.0f,  0.0f, 0.0f, 1.0f  // top-left    
 	};
+
+	GLfloat skyboxVertices[] = {
+		// Positions          
+		-1.0f,  1.0f, -1.0f,
+		-1.0f, -1.0f, -1.0f,
+		1.0f, -1.0f, -1.0f,
+		1.0f, -1.0f, -1.0f,
+		1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+
+		-1.0f, -1.0f,  1.0f,
+		-1.0f, -1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f,  1.0f,
+		-1.0f, -1.0f,  1.0f,
+
+		1.0f, -1.0f, -1.0f,
+		1.0f, -1.0f,  1.0f,
+		1.0f,  1.0f,  1.0f,
+		1.0f,  1.0f,  1.0f,
+		1.0f,  1.0f, -1.0f,
+		1.0f, -1.0f, -1.0f,
+
+		-1.0f, -1.0f,  1.0f,
+		-1.0f,  1.0f,  1.0f,
+		1.0f,  1.0f,  1.0f,
+		1.0f,  1.0f,  1.0f,
+		1.0f, -1.0f,  1.0f,
+		-1.0f, -1.0f,  1.0f,
+
+		-1.0f,  1.0f, -1.0f,
+		1.0f,  1.0f, -1.0f,
+		1.0f,  1.0f,  1.0f,
+		1.0f,  1.0f,  1.0f,
+		-1.0f,  1.0f,  1.0f,
+		-1.0f,  1.0f, -1.0f,
+
+		-1.0f, -1.0f, -1.0f,
+		-1.0f, -1.0f,  1.0f,
+		1.0f, -1.0f, -1.0f,
+		1.0f, -1.0f, -1.0f,
+		-1.0f, -1.0f,  1.0f,
+		1.0f, -1.0f,  1.0f
+	};
+
+
+
 	GLfloat planeVertices[] = {
 		// Positions            // Texture Coords (note we set these higher than 1 that together with GL_REPEAT as texture wrapping mode will cause the floor texture to repeat)
-		5.0f,  -0.5f,  5.0f,  2.0f, 0.0f,
-		-5.0f, -0.5f,  5.0f,  0.0f, 0.0f,
-		-5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
+		5.0f,  -0.5f,  5.0f, 0.0f, 1.0f, 0.0f, 2.0f, 0.0f,
+		-5.0f, -0.5f,  5.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		-5.0f, -0.5f, -5.0f, 0.0f, 1.0f, 0.0f, 0.0f, 2.0f,
 
-		5.0f,  -0.5f,  5.0f,  2.0f, 0.0f,
-		-5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
-		5.0f,  -0.5f, -5.0f,  2.0f, 2.0f
+		5.0f,  -0.5f,  5.0f, 0.0f, 1.0f, 0.0f, 2.0f, 0.0f,
+		-5.0f, -0.5f, -5.0f, 0.0f, 1.0f, 0.0f, 0.0f, 2.0f,
+		5.0f,  -0.5f, -5.0f, 0.0f, 1.0f, 0.0f, 2.0f, 2.0f
 	};
 
 
@@ -319,10 +260,25 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
 	glBindVertexArray(0);
+
+	// Setup skybox VAO
+	GLuint skyboxVAO, skyboxVBO;
+	glGenVertexArrays(1, &skyboxVAO);
+	glGenBuffers(1, &skyboxVBO);
+	glBindVertexArray(skyboxVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+	glBindVertexArray(0);
+
+
 	// Setup plane VAO
 	GLuint planeVAO, planeVBO;
 	glGenVertexArrays(1, &planeVAO);
@@ -331,9 +287,11 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), &planeVertices, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
 	glBindVertexArray(0);
 
 
@@ -354,6 +312,28 @@ int main()
 	GLuint cubeTexture = loadTexture("container2.png");
 	GLuint floorTexture = loadTexture("87face.png");
 	GLuint grassTexture = loadTexture("texture/window.png", true);
+
+	std::vector<const GLchar *> faces;
+	faces.push_back("texture/sky/right.jpg");
+	faces.push_back("texture/sky/left.jpg");
+	faces.push_back("texture/sky/top.jpg");
+	faces.push_back("texture/sky/bottom.jpg");
+	faces.push_back("texture/sky/back.jpg");
+	faces.push_back("texture/sky/front.jpg");
+
+	
+
+	std::vector<const GLchar *> blurFaces;
+	blurFaces.push_back("texture/sky/blur/right.jpg");
+	blurFaces.push_back("texture/sky/blur/left.jpg");
+	blurFaces.push_back("texture/sky/blur/top.jpg");
+	blurFaces.push_back("texture/sky/blur/bottom.jpg");
+	blurFaces.push_back("texture/sky/blur/back.jpg");
+	blurFaces.push_back("texture/sky/blur/front.jpg");
+
+	GLuint cubemapTexture = loadCubemap(faces);
+	GLuint cubemapBlurTexture = loadCubemap(blurFaces);
+
 
 	//framebuffer
 	GLuint framebuffer;
@@ -401,29 +381,40 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_BLEND);
-
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_FRONT);
+
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-		// Set uniforms
-		shader.use();
 		glm::mat4 model;
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 projection = glm::perspective(camera.Zoom, (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
+
+		// Set uniforms
+		shader.use();
 		glUniformMatrix4fv(glGetUniformLocation(shader.program, "view"), 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(glGetUniformLocation(shader.program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-
+		glUniform3f(glGetUniformLocation(shader.program, "cameraPos"), camera.position.x, camera.position.y, camera.position.z);
+ 
 		// Floor
 		glBindVertexArray(planeVAO);
 		glBindTexture(GL_TEXTURE_2D, floorTexture);
+		glActiveTexture(GL_TEXTURE1);
+		glUniform1i(glGetUniformLocation(shader.program, "skybox"), 1);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapBlurTexture);
+
 		model = glm::mat4();
 		glUniformMatrix4fv(glGetUniformLocation(shader.program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		glBindVertexArray(0);
 		// Cubes
 		glBindVertexArray(cubeVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glUniform1i(glGetUniformLocation(shader.program, "texture1"), 0);
 		glBindTexture(GL_TEXTURE_2D, cubeTexture);
+
+
 		model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
 		glUniformMatrix4fv(glGetUniformLocation(shader.program, "model"), 1, GL_FALSE, glm::value_ptr(model));
 		glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -434,7 +425,26 @@ int main()
 		glBindVertexArray(0);
 
 
+		view = glm::mat4(glm::mat3(camera.GetViewMatrix()));
+		glDepthFunc(GL_LEQUAL);
+		glDisable(GL_CULL_FACE);
+		skyboxShader.use();
+		glUniformMatrix4fv(glGetUniformLocation(skyboxShader.program, "view"), 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(glGetUniformLocation(skyboxShader.program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+		glBindVertexArray(skyboxVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glUniform1i(glGetUniformLocation(skyboxShader.program, "skybox"), 0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
 
+		glDepthFunc(GL_LESS);
+
+
+
+
+
+		
 		// bind default framebuffer again and draw 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // Set clear color to white (not really necessery actually, since we won't be able to see behind the quad anyways)
@@ -516,6 +526,31 @@ GLuint loadTexture(GLchar* path, GLboolean alpha )
 	return textureID;
 
 }
+
+GLuint loadCubemap(std::vector<const GLchar*>  faces) {
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+	glActiveTexture(GL_TEXTURE0);
+
+	int width, height;
+	unsigned char * image;
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+	for (int i = 0; i < faces.size(); i++) {
+		image = SOIL_load_image(faces[i], &width, &height, 0, SOIL_LOAD_RGB);
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+		SOIL_free_image_data(image);
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+	return textureID;
+
+}
+
 
 #pragma region "User input"
 
