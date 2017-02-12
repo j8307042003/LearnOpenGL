@@ -88,7 +88,7 @@ int main()
 	glDepthFunc(GL_LESS); // Set to always pass the depth test (same effect as glDisable(GL_DEPTH_TEST))
 
 							// Setup and compile our shaders
-	common::Shader shader("shader/advanced.vs", "shader/advanced.frag");
+	common::Shader shader("shader/advancedstd140.vs", "shader/advanced.frag");
 	common::Shader shaderSingleColor("shader/advanced.vs", "shader/singleColor.frag");
 	common::Shader screenShader("shader/screen.vs", "shader/screen.frag");
 	common::Shader skyboxShader("shader/skybox.vs", "shader/skybox.frag");
@@ -226,6 +226,20 @@ int main()
 	};
 
 
+
+	GLuint ubIndexShader = glGetUniformBlockIndex(shader.program, "Matrices");
+
+	glUniformBlockBinding(shader.program, ubIndexShader, 0);
+
+
+	GLuint uboMatrices;
+
+	glGenBuffers(1, &uboMatrices);
+	glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+	glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_STATIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	glBindBufferRange(GL_UNIFORM_BUFFER, 0, uboMatrices, 0, 2 * sizeof(glm::mat4));
 
 	std::vector<glm::vec3> vegetation;
 	vegetation.push_back(glm::vec3(-1.5f, 0.0f, -0.48f));
@@ -390,10 +404,15 @@ int main()
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 projection = glm::perspective(camera.Zoom, (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
 
+		glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
+		glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+
 		// Set uniforms
 		shader.use();
-		glUniformMatrix4fv(glGetUniformLocation(shader.program, "view"), 1, GL_FALSE, glm::value_ptr(view));
-		glUniformMatrix4fv(glGetUniformLocation(shader.program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+		
 		glUniform3f(glGetUniformLocation(shader.program, "cameraPos"), camera.position.x, camera.position.y, camera.position.z);
  
 		// Floor
