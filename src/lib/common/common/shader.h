@@ -10,7 +10,7 @@ namespace common {
 	public:
 		// program location
 		GLuint program;
-		Shader(const GLchar * vertexShaderPath, const GLchar * fragmentShaderPath);
+		Shader(const GLchar * vertexShaderPath, const GLchar * fragmentShaderPath, const GLchar * geometryShaderPath = nullptr);
 		void use();
 
 	private:

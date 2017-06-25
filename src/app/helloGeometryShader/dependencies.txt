@@ -1,0 +1,6 @@
+glfw3
+glew32s
+OpenGL32
+common
+SOIL
+assimp

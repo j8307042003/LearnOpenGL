@@ -18,7 +18,8 @@ local consoleApps = {
 "helloLoader",
 "helloDepthTest",
 "helloFramebuffer",
-"helloCubeMap"
+"helloCubeMap",
+"helloGeometryShader"
 
 }
 
