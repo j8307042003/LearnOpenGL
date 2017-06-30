@@ -62,6 +62,11 @@ namespace common {
 
 	}
 
+	GLuint Mesh::GetVAO()
+	{
+		return VAO;
+	}
+
 
 	void Mesh::setupMesh() {
 		glGenVertexArrays(1, &this->VAO);

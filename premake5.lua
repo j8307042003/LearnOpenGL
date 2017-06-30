@@ -19,7 +19,8 @@ local consoleApps = {
 "helloDepthTest",
 "helloFramebuffer",
 "helloCubeMap",
-"helloGeometryShader"
+"helloGeometryShader",
+"helloGPUInstancing"
 
 }
 

@@ -43,9 +43,10 @@ namespace common {
 		std::vector<Texture> textures;
 		std::vector<GLuint> indices;
 
+
 		Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture> textures);
 		void Draw(Shader shader);
-
+		GLuint  GetVAO();
 	private:
 		GLuint VAO, VBO, EBO;
 

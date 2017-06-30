@@ -26,12 +26,13 @@ namespace common {
 	public:
 		/*  Functions   */
 		Model(GLchar* path);
+		std::vector<Mesh> meshes;
+		std::vector<Texture> textures_loaded;
+
 		void Draw(Shader shader);
 	private:
 		/*  Model Data  */
-		std::vector<Mesh> meshes;
 		std::string directory;
-		std::vector<Texture> textures_loaded;
 		/*  Functions   */
 		void loadModel(std::string path);
 		void processNode(aiNode* node, const aiScene* scene);
