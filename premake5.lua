@@ -1,6 +1,6 @@
 
 
-local solutionName = "OpenGLGraphicEngine"
+local solutionName = "OpenGLGraphicLearn"
 
 
 -- windows application
@@ -20,7 +20,8 @@ local consoleApps = {
 "helloFramebuffer",
 "helloCubeMap",
 "helloGeometryShader",
-"helloGPUInstancing"
+"helloGPUInstancing",
+"helloBlinnPhong"
 
 }
 

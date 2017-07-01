@@ -79,7 +79,7 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-
+	glfwWindowHint(GLFW_SAMPLES, 4);
 	GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "LearnOpenGL", nullptr, nullptr); // Windowed
 	glfwMakeContextCurrent(window);
 
@@ -103,6 +103,7 @@ int main()
 	// Setup some OpenGL options
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
+	glEnable(GL_MULTISAMPLE);
 	glCullFace(GL_BACK);
 
 	// Setup and compile our shaders
@@ -230,8 +231,8 @@ int main()
 
 		// draw planet
 		glm::mat4 model;
-		model = glm::translate(model, glm::vec3(0.0f, -3.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(4.0f, 4.0f, 4.0f));
+		model = glm::translate(model, glm::vec3(0.0f, -20.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(15.0f, 15.0f, 15.0f));
 		planetShader.SetMat4("model", model);
 		planet.Draw(planetShader);
 
@@ -252,7 +253,7 @@ int main()
 		glfwSwapBuffers(window);
 
 		//std::cout << glfwGetTime() - lastFrame << " seconds\n";
-		std::cout << 1 / (glfwGetTime() - currentFrame) << " fps\n";
+		//std::cout << 1 / (glfwGetTime() - currentFrame) << " fps\n";
 
 	}
 

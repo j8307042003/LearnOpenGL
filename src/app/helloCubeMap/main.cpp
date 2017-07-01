@@ -25,7 +25,7 @@
 
 
 // Properties
-GLuint screenWidth = 800, screenHeight = 600;
+GLuint screenWidth = 1920, screenHeight = 1080;
 
 // Function prototypes
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
@@ -55,6 +55,7 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+	glfwWindowHint(GLFW_SAMPLES, 4);
 
 	GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "LearnOpenGL", nullptr, nullptr); // Windowed
 	glfwMakeContextCurrent(window);
@@ -77,7 +78,7 @@ int main()
 	// Setup some OpenGL options
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
-
+	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -397,7 +398,7 @@ int main()
 		glEnable(GL_BLEND);
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_FRONT);
-
+		glEnable(GL_MULTISAMPLE);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		glm::mat4 model;
