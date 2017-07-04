@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <vector>
 #include "SOIL\SOIL.h"
+#include "stb\stb_image.h"
 
 #if defined _WIN32
 // OpenGL on Windows needs Windows.h
@@ -35,7 +36,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void Do_Movement();
-GLuint loadTexture(GLchar* path, GLboolean alpha = false);
+unsigned int loadTexture(const char *path, bool gammaCorrection);
+
 
 
 // Camera
@@ -46,6 +48,10 @@ bool firstMouse = true;
 
 bool blinn = false;
 bool blinnKeyPressed = false;
+
+bool gamma = false;
+bool gammaKeyPressed = false;
+
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
 
@@ -78,12 +84,14 @@ int main()
 	// Define the viewport dimensions
 	glViewport(0, 0, screenWidth, screenHeight);
 
+	// no need to use full power in this case
 	glfwSwapInterval(1);
 
 	// Setup some OpenGL options
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_BLEND);
+	//glEnable(GL_FRAMEBUFFER_SRGB);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// Setup and compile our shaders
@@ -114,7 +122,7 @@ int main()
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 	glBindVertexArray(0);
 
-	GLuint planeTexture = loadTexture("texture/wood.png");
+	GLuint planeTexture = loadTexture("texture/wood.png", true);
 
 
 	shader.use();
@@ -145,6 +153,8 @@ int main()
 		shader.SetVec3( "viewPos", camera.position );
 		shader.SetVec3("lightPos", lightPos);
 		shader.SetInt("blinn", blinn);
+		shader.SetInt("gamma", gamma);
+
 
 		glBindVertexArray(VAO);
 		glActiveTexture(GL_TEXTURE0);
@@ -191,6 +201,15 @@ void Do_Movement()
 		blinnKeyPressed = false;
 	}
 
+	if (keys[GLFW_KEY_G] && !gammaKeyPressed)
+	{
+		gamma = !gamma;
+		gammaKeyPressed = true;
+	}
+	if (!keys[GLFW_KEY_G])
+	{
+		gammaKeyPressed = false;
+	}
 
 }
 
@@ -232,29 +251,50 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 #pragma endregion
 
 
-// This function loads a texture from file. Note: texture loading functions like these are usually 
-// managed by a 'Resource Manager' that manages all resources (like textures, models, audio). 
-// For learning purposes we'll just define it as a utility function.
-GLuint loadTexture(GLchar* path, GLboolean alpha)
+// utility function for loading a 2D texture from file
+// ---------------------------------------------------
+unsigned int loadTexture(char const * path, bool gammaCorrection)
 {
-	//Generate texture ID and load texture data 
-	GLuint textureID;
+	unsigned int textureID;
 	glGenTextures(1, &textureID);
-	int width, height;
-	unsigned char* image = SOIL_load_image(path, &width, &height, 0, alpha ? SOIL_LOAD_RGBA : SOIL_LOAD_RGB);
-	// Assign texture to ID
-	glBindTexture(GL_TEXTURE_2D, textureID);
-	glTexImage2D(GL_TEXTURE_2D, 0, alpha ? GL_RGBA : GL_RGB, width, height, 0, alpha ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, image);
-	glGenerateMipmap(GL_TEXTURE_2D);
 
-	// Parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, alpha ? GL_CLAMP_TO_EDGE : GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, alpha ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+	int width, height, nrComponents;
+	unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+	if (data)
+	{
+		GLenum internalFormat;
+		GLenum dataFormat;
+		if (nrComponents == 1)
+		{
+			internalFormat = dataFormat = GL_RED;
+		}
+		else if (nrComponents == 3)
+		{
+			internalFormat = gammaCorrection ? GL_SRGB : GL_RGB;
+			dataFormat = GL_RGB;
+		}
+		else if (nrComponents == 4)
+		{
+			internalFormat = gammaCorrection ? GL_SRGB_ALPHA : GL_RGBA;
+			dataFormat = GL_RGBA;
+		}
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	SOIL_free_image_data(image);
+		glBindTexture(GL_TEXTURE_2D, textureID);
+		glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		stbi_image_free(data);
+	}
+	else
+	{
+		std::cout << "Texture failed to load at path: " << path << std::endl;
+		stbi_image_free(data);
+	}
+
 	return textureID;
-
 }

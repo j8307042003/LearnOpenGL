@@ -162,7 +162,7 @@ int main()
 	unsigned int buffer;
 	glGenBuffers(1, &buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
-	glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &models[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &models[0], GL_DYNAMIC_DRAW);
 
 	
 	for (unsigned int i = 0; i < rock.meshes.size(); ++i) {
@@ -225,16 +225,17 @@ int main()
 			delta -= tick;
 		}
 
-
-		glBindBuffer(GL_ARRAY_BUFFER, buffer);
-		glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &models[0], GL_STATIC_DRAW);
-
 		// draw planet
 		glm::mat4 model;
 		model = glm::translate(model, glm::vec3(0.0f, -20.0f, 0.0f));
 		model = glm::scale(model, glm::vec3(15.0f, 15.0f, 15.0f));
 		planetShader.SetMat4("model", model);
 		planet.Draw(planetShader);
+
+
+		glBindBuffer(GL_ARRAY_BUFFER, buffer);
+		//glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &models[0], GL_STATIC_DRAW);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, amount * sizeof(glm::mat4), &models[0]);
 
 		// draw meteorites
 		asteroidShader.use();
@@ -253,7 +254,7 @@ int main()
 		glfwSwapBuffers(window);
 
 		//std::cout << glfwGetTime() - lastFrame << " seconds\n";
-		//std::cout << 1 / (glfwGetTime() - currentFrame) << " fps\n";
+		std::cout << 1 / (glfwGetTime() - currentFrame) << " fps\n";
 
 	}
 
