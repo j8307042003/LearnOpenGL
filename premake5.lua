@@ -21,7 +21,8 @@ local consoleApps = {
 "helloCubeMap",
 "helloGeometryShader",
 "helloGPUInstancing",
-"helloBlinnPhong"
+"helloBlinnPhong",
+"helloShadow"
 
 }
 

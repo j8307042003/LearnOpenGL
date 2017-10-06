@@ -302,7 +302,7 @@ int main()
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_FRONT);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+		
 		// Set uniforms
 		shader.use();
 		glm::mat4 model;
@@ -339,6 +339,7 @@ int main()
 		glDisable(GL_DEPTH_TEST); // We don't care about depth information when rendering a single quad
 		glDisable(GL_CULL_FACE);
 		glDisable(GL_BLEND);
+		
 		screenShader.use();
 		glBindVertexArray(quadVAO);
 		glBindTexture(GL_TEXTURE_2D, textureColorbuffer);	// Use the color attachment texture as the texture of the quad plane

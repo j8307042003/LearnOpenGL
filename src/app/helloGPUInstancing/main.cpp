@@ -53,11 +53,11 @@ int threadCount = 1;
 
 int liveThread = 0;
 
-float tick = 1 / 60.0f;
+const float tick = 1 / 60.0f;
 float circleTime = 0.1f;
 
 // number of rock to be instanced.
-int amount = 100000;
+int amount = 10000;
 
 // for convenience access 
 int offset = 20;
@@ -206,9 +206,6 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)screenWidth / (float)screenHeight, 0.1f, 1000.0f);
 		glm::mat4 view = camera.GetViewMatrix();
-		asteroidShader.use();
-		asteroidShader.SetMat4("projection", projection);
-		asteroidShader.SetMat4("view", view);
 		planetShader.use();
 		planetShader.SetMat4("projection", projection);
 		planetShader.SetMat4("view", view);
@@ -234,11 +231,14 @@ int main()
 
 
 		glBindBuffer(GL_ARRAY_BUFFER, buffer);
-		//glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &models[0], GL_STATIC_DRAW);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, amount * sizeof(glm::mat4), &models[0]);
+		glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &models[0], GL_DYNAMIC_DRAW);
+		//glBufferSubData(GL_ARRAY_BUFFER, 0, amount * sizeof(glm::mat4), &models[0]);
 
 		// draw meteorites
 		asteroidShader.use();
+		//asteroidShader.use();
+		asteroidShader.SetMat4("projection", projection);
+		asteroidShader.SetMat4("view", view);
 		asteroidShader.SetInt("texture_diffuse1", 0);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, rock.textures_loaded[0].id); // note: we also made the textures_loaded vector public (instead of private) from the model class.
