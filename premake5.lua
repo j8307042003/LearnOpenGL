@@ -22,7 +22,8 @@ local consoleApps = {
 "helloGeometryShader",
 "helloGPUInstancing",
 "helloBlinnPhong",
-"helloShadow"
+"helloShadow",
+"helloSSR"
 
 }
 
