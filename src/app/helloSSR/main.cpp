@@ -22,6 +22,7 @@
 #include "common\Shader.h"
 #include "common\Camera.h"
 #include "common\Model.h"
+#include "GLH\GLH.h"
 
 #include <queue>
 #include <thread>
@@ -41,6 +42,7 @@ void renderQuad();
 void renderCube();
 void renderCameraDepth( const common::Shader & shader, unsigned int & cameraDepthMap, unsigned int & depthFBO, const unsigned int & width, const unsigned int & height);
 void renderSkybox();
+GLuint generateAttachmentTexture(GLboolean depth, GLboolean stencil);
 unsigned int loadTexture(const char *path, bool gammaCorrection);
 GLuint loadCubemap(std::vector<const GLchar*>  faces);
 
@@ -66,6 +68,8 @@ GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
 
 unsigned int debugDepthMapIndex;
+//unsigned int woodTexture;
+GLH::Texture * woodTexture;
 
 // The MAIN function, from here we start our application and run our Game loop
 int main()
@@ -132,7 +136,8 @@ int main()
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 	glBindVertexArray(0);
 
-	unsigned int woodTexture = loadTexture("texture/wood.png", true);
+	//woodTexture = loadTexture("texture/wood.png", true);
+	woodTexture =  new GLH::Texture("texture/wood.png", true);
 
 	std::vector<const GLchar *> faces;
 	faces.push_back("texture/sky/right.jpg");
@@ -168,13 +173,40 @@ int main()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
+
+	//framebuffer
+	GLuint framebuffer;
+	glGenFramebuffers(1, &framebuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+	GLuint textureColorbuffer = generateAttachmentTexture(false, false);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
+	//render buffer object
+	GLuint rbo;
+	glGenRenderbuffers(1, &rbo);
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, screenWidth, screenHeight);
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "Error: framebuffer is not complete!\n";
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
 	common::Shader depthShader("shader/depthMap.vs", "shader/empty.fs");
 	common::Shader shadowShader("shader/renderShadow.vs", "shader/renderShadow.fs");
 	common::Shader debugShader("shader/depthDebug.vs", "shader/depthDebug.fs");
+	common::Shader lazySSR("shader/renderShadow.vs", "shader/LazySSR.fs");
+	//common::Shader lazySSR("shader/renderShadow.vs", "shader/renderShadow.fs");
 
 	shadowShader.use();
 	shadowShader.SetInt("diffuseTexture", 0);
 	shadowShader.SetInt("shadowMap", 1);
+	lazySSR.use();
+	lazySSR.SetInt("diffuseTexture", 0);
+	lazySSR.SetInt("shadowMap", 1);
 	debugShader.use();
 	debugShader.SetInt("depthMap", 0);
 
@@ -218,15 +250,17 @@ int main()
 
 		glClear(GL_DEPTH_BUFFER_BIT);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, woodTexture);
+		glBindTexture(GL_TEXTURE_2D, *woodTexture);
 		glCullFace(GL_FRONT);
 		renderScene(depthShader);
 		glCullFace(GL_BACK);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+
 		// 2. render scene as normal using the generated depth/shadow map  
 		// --------------------------------------------------------------
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 		glViewport(0, 0, screenWidth, screenHeight);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		shadowShader.use();
@@ -239,32 +273,76 @@ int main()
 		shadowShader.SetVec3("lightPos", lightPos);
 		shadowShader.SetMat4("lightSpaceMatrix", lightSpaceMatrix);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, woodTexture);
+		glBindTexture(GL_TEXTURE_2D,*woodTexture);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, depthMap);
 		renderScene(shadowShader);
-
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		
 		// 2. render camera depth
-		lightSpaceMatrix = projection * view;
+		/*lightSpaceMatrix = projection * view;
 		// render scene from light's point of view
 		depthShader.use();
-		depthShader.SetMat4("lightSpaceMatrix", lightSpaceMatrix);
+		depthShader.SetMat4("lightSpaceMatrix", projection*view);
 		for (int i = 0; i < 3; ++i) {
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			renderCameraDepth(depthShader, cameraDepthFBO[i], cameraDepthMap[i] ,screenWidth/(i+1), screenHeight/(i+1));
+			renderCameraDepth(depthShader, cameraDepthMap[i], cameraDepthFBO[i], screenWidth/(i+1), screenHeight/(i+1));
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		}
+		}*/
 		
+		lazySSR.use();
+		glViewport(0, 0, screenWidth, screenHeight);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);		
+		projection = glm::perspective(glm::radians(camera.Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
+		view = camera.GetViewMatrix();
+		lazySSR.SetMat4("projection", projection);
+		lazySSR.SetMat4("view", view);
+		// set light uniforms
+		lazySSR.SetVec3("viewPos", camera.position);
+		lazySSR.SetVec3("lightPos", lightPos);
+		lazySSR.SetMat4("lightSpaceMatrix", lightSpaceMatrix);
+		lazySSR.SetMat4("projectionView", projection * view);
+		lazySSR.SetFloat("near_plane", near_plane);
+		lazySSR.SetFloat("far_plane", far_plane);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, *woodTexture);
+		//glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, cameraDepthMap[debugDepthMapIndex]);
+		renderScene(lazySSR);
 
-
+		/*
+		glViewport(0, 0, screenWidth, screenHeight);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		shadowShader.use();
+		projection = glm::perspective(glm::radians(camera.Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
+		view = camera.GetViewMatrix();
+		shadowShader.SetMat4("projection", projection);
+		shadowShader.SetMat4("view", view);
+		// set light uniforms
+		shadowShader.SetVec3("viewPos", camera.position);
+		shadowShader.SetVec3("lightPos", lightPos);
+		shadowShader.SetMat4("lightSpaceMatrix", lightSpaceMatrix);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, woodTexture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+		renderScene(shadowShader);*/
 
 		/* 3. render camera view */
+		/*
 		debugShader.use();
 		debugShader.SetFloat("near_plane", near_plane);
 		debugShader.SetFloat("far_plane", far_plane);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, cameraDepthMap[debugDepthMapIndex]);
-		renderQuad();
+		//glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+		renderQuad();*/
+		
 
 		glfwSwapBuffers(window);
 		//std::cout << blinn << "\n";
@@ -508,8 +586,35 @@ void renderCameraDepth(const common::Shader & shader, unsigned int & cameraDepth
 
 	glViewport(0, 0, width, height);
 	glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
-	glClear(GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	renderScene(shader);
+}
+
+
+GLuint generateAttachmentTexture(GLboolean depth, GLboolean stencil) {
+
+	GLenum attachment_type;
+	if (!depth && !stencil)
+		attachment_type = GL_RGB;
+	else if (stencil && !depth)
+		attachment_type = GL_STENCIL_INDEX;
+	else if (!stencil && depth)
+		attachment_type = GL_DEPTH_COMPONENT;
+
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+	if (!depth && !stencil)
+		glTexImage2D(GL_TEXTURE_2D, 0, attachment_type, screenWidth, screenHeight, 0, attachment_type, GL_UNSIGNED_BYTE, NULL);
+	else
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, screenWidth, screenHeight, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	return textureID;
+
+
 }
 
 #pragma region "User input"

@@ -22,7 +22,7 @@
 
 #include "common\Shader.h"
 #include "common\Camera.h"
-
+#include "GLH\GLH.h"
 
 // Properties
 GLuint screenWidth = 800, screenHeight = 600;
@@ -346,9 +346,15 @@ int main()
 	blurFaces.push_back("texture/sky/blur/back.jpg");
 	blurFaces.push_back("texture/sky/blur/front.jpg");
 
-	GLuint cubemapTexture = loadCubemap(faces);
+	//GLuint cubemapTexture = loadCubemap(faces);
 	GLuint cubemapBlurTexture = loadCubemap(blurFaces);
 
+	GLH::CubeTexture * cubemapTexture = new GLH::CubeTexture("texture/sky/right.jpg",
+		"texture/sky/left.jpg",
+		"texture/sky/top.jpg",
+		"texture/sky/bottom.jpg",
+		"texture/sky/back.jpg",
+		"texture/sky/front.jpg");
 
 	//framebuffer
 	GLuint framebuffer;
@@ -454,7 +460,7 @@ int main()
 		glBindVertexArray(skyboxVAO);
 		glActiveTexture(GL_TEXTURE0);
 		glUniform1i(glGetUniformLocation(skyboxShader.program, "skybox"), 0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, *cubemapTexture);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
 
