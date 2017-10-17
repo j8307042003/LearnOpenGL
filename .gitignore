@@ -5,6 +5,7 @@ sln/
 Debug/
 DebugDll/
 working/*.exe
+working/*.csv
 
 # Sublime Files
 *.sublime-workspace
