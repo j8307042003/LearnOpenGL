@@ -16,7 +16,7 @@ GLH::Texture::Texture()
 
 GLH::Texture::Texture(const char * path, const bool & gammaCorrection) :gammaCorrection(gammaCorrection), path(NULL), obj(0)
 {
-	unsigned int length = strlen(path) + 1;
+	size_t length = strlen(path) + 1;
 	char * str = new char[length];
 
 	this->path = str ;
@@ -37,10 +37,7 @@ void GLH::Texture::load()
 
 void GLH::Texture::unload()
 {
-	if (this->obj > 0) {
-		glDeleteTextures(1, &(this->obj));
-		obj = 0;
-	}
+	DoUnload();
 }
 
 void GLH::Texture::DoLoad()
@@ -91,6 +88,14 @@ void GLH::Texture::DoLoad()
 	}
 }
 
+void GLH::Texture::DoUnload()
+{
+	if (this->obj > 0) {
+		glDeleteTextures(1, &(this->obj));
+		obj = 0;
+	}
+}
+
 GLH::Texture::operator GLuint() const
 {
 	return this->obj;
@@ -100,9 +105,22 @@ GLH::CubeTexture::CubeTexture()
 {
 }
 
-GLH::CubeTexture::CubeTexture(const char * right, const char * left, const char * top, const char * bottom, const char * back, const char * front)
+GLH::CubeTexture::CubeTexture(const char * right, const char * left, const char * top, const char * bottom, const char * back, const char * front):cubeMapPath(6)
 {
-	std::vector<const char *> paths;
+
+	cubeMapPath[0] = right;
+	cubeMapPath[1] = left;
+	cubeMapPath[2] = top;
+	cubeMapPath[3] = bottom;
+	cubeMapPath[4] = back;
+	cubeMapPath[5] = front;
+
+	load();
+
+}
+
+void GLH::CubeTexture::DoLoad()
+{
 
 	GLuint textureID;
 	glGenTextures(1, &textureID);
@@ -113,29 +131,11 @@ GLH::CubeTexture::CubeTexture(const char * right, const char * left, const char 
 
 	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
-	image = SOIL_load_image(right, &width, &height, 0, SOIL_LOAD_RGB);
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-	SOIL_free_image_data(image);
-
-	image = SOIL_load_image(left, &width, &height, 0, SOIL_LOAD_RGB);
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+1, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-	SOIL_free_image_data(image);
-
-	image = SOIL_load_image(top, &width, &height, 0, SOIL_LOAD_RGB);
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+2, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-	SOIL_free_image_data(image);
-
-	image = SOIL_load_image(bottom, &width, &height, 0, SOIL_LOAD_RGB);
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+3, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-	SOIL_free_image_data(image);
-
-	image = SOIL_load_image(back, &width, &height, 0, SOIL_LOAD_RGB);
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+4, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-	SOIL_free_image_data(image);
-
-	image = SOIL_load_image(front, &width, &height, 0, SOIL_LOAD_RGB);
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+5, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-	SOIL_free_image_data(image);
+	for (int i = 0; i < cubeMapPath.size(); i++) {
+		image = SOIL_load_image(cubeMapPath[i].c_str(), &width, &height, 0, SOIL_LOAD_RGB);
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+		SOIL_free_image_data(image);
+	}
 
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -143,6 +143,30 @@ GLH::CubeTexture::CubeTexture(const char * right, const char * left, const char 
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+	this->obj = textureID;
+
+
+}
+
+GLH::FrameBuffer::FrameBuffer()
+{
+}
+
+GLH::FrameBuffer::FrameBuffer(TextureFormat format, unsigned int width, unsigned int height):format(format), width(width), height(height)
+{
+	load();
+}
+
+void GLH::FrameBuffer::DoLoad()
+{
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+	glTexImage2D(GL_TEXTURE_2D, 0, format == TextureFormat::Depth_Stencil?(GL_DEPTH24_STENCIL8): format, width, height, 0, format, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	this->obj = textureID;
 }
