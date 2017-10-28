@@ -53,7 +53,8 @@ void GLH::Texture::unload()
 
 void GLH::Texture::DoLoad( unsigned char * data )
 {
-	if (this->obj != 0) return;
+	if (this->obj != 0)
+		unload();
 
 	unsigned int textureId;
 	glGenTextures(1, &textureId);
@@ -99,6 +100,11 @@ GLH::CubeTexture::CubeTexture(): wrapR(GL_CLAMP_TO_EDGE)
 	wrapT = GL_CLAMP_TO_EDGE;
 	mag_fliter = GL_LINEAR;
 	min_fliter = GL_LINEAR;
+}
+
+GLH::CubeTexture::~CubeTexture()
+{
+	unload();
 }
 
 void GLH::CubeTexture::load(const char * right, const char * left, const char * top, const char * bottom, const char * back, const char * front)
@@ -147,6 +153,9 @@ void GLH::CubeTexture::DoLoad(std::vector<LoadImage> cubeImgs)
 		std::cout << " cube map size not correct. need : " << CubeMapSize << ". receieved : " << cubeImgs.size() << "\n";
 		return;
 	}
+
+	if (obj != 0)
+		unload();
 
 	GLuint textureID;
 	glGenTextures(1, &textureID);

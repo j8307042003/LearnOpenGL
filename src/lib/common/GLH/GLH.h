@@ -58,7 +58,7 @@ namespace GLH {
 		GLenum wrapR = GL_CLAMP_TO_EDGE;
 
 		CubeTexture();
-
+		~CubeTexture();
 
 		void load(const char * right, const char * left, const char * top, const char * bottom, const char * back, const char * front);
 		void load(const char * right, const char * left, const char * top, const char * bottom, const char * back, const char * front, GLenum wraps, GLenum wrapt, GLenum internalFormat, GLenum dataFormat, GLenum min_fliter, GLenum mag_fliter);
