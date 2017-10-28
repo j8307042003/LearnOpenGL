@@ -349,7 +349,8 @@ int main()
 	//GLuint cubemapTexture = loadCubemap(faces);
 	GLuint cubemapBlurTexture = loadCubemap(blurFaces);
 
-	GLH::CubeTexture * cubemapTexture = new GLH::CubeTexture("texture/sky/right.jpg",
+	GLH::CubeTexture * cubemapTexture = new GLH::CubeTexture();
+	cubemapTexture->load("texture/sky/right.jpg",
 		"texture/sky/left.jpg",
 		"texture/sky/top.jpg",
 		"texture/sky/bottom.jpg",

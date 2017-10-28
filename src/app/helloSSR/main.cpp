@@ -137,7 +137,8 @@ int main()
 	glBindVertexArray(0);
 
 	//woodTexture = loadTexture("texture/wood.png", true);
-	woodTexture =  new GLH::Texture("texture/wood.png", true);
+	woodTexture =  new GLH::Texture();
+	woodTexture->load("texture/wood.png");
 
 	std::vector<const GLchar *> faces;
 	faces.push_back("texture/sky/right.jpg");

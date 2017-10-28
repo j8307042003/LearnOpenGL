@@ -10,29 +10,40 @@
 // GLFW
 #include <GLFW/glfw3.h>
 
-GLH::Texture::Texture()
+GLH::Texture::Texture():obj(0)
 {
-}
-
-GLH::Texture::Texture(const char * path, const bool & gammaCorrection) :gammaCorrection(gammaCorrection), path(NULL), obj(0)
-{
-	size_t length = strlen(path) + 1;
-	char * str = new char[length];
-
-	this->path = str ;
-	strcpy(this->path, path);
-	load();
 }
 
 GLH::Texture::~Texture()
 {
 	unload();
-	delete[] path;
 }
 
-void GLH::Texture::load()
+void GLH::Texture::load(char * path)
 {
-	DoLoad();
+	
+	unsigned char * data = stbi_load(path, &width, &height, 0, SOIL_LOAD_RGB);
+	load(data, width, height);
+	if (data) stbi_image_free(data);
+}
+
+void GLH::Texture::load(char * path, GLenum wraps, GLenum wrapt, GLenum internalFormat = GL_RGB, GLenum dataFormat = GL_RGB, GLenum min_fliter = GL_LINEAR_MIPMAP_LINEAR, GLenum mag_fliter = GL_LINEAR)
+{
+	SetArguments(wraps, wrapt, internalFormat, dataFormat, min_fliter, mag_fliter);
+	load(path);
+}
+
+void GLH::Texture::load(unsigned char * data, int width, int height)
+{
+	this->width = width;
+	this->height = height;
+	DoLoad( data );
+}
+
+void GLH::Texture::load(unsigned char * data, int width, int height, GLenum wraps, GLenum wrapt, GLenum internalFormat = GL_RGB, GLenum dataFormat = GL_RGB, GLenum min_fliter = GL_LINEAR_MIPMAP_LINEAR, GLenum mag_fliter = GL_LINEAR)
+{
+	SetArguments(wraps, wrapt, internalFormat, dataFormat, min_fliter, mag_fliter);
+	load(data, width, height);
 }
 
 void GLH::Texture::unload()
@@ -40,52 +51,23 @@ void GLH::Texture::unload()
 	DoUnload();
 }
 
-void GLH::Texture::DoLoad()
+void GLH::Texture::DoLoad( unsigned char * data )
 {
-	if (this->obj != 0 || path == NULL) return;
+	if (this->obj != 0) return;
 
 	unsigned int textureId;
 	glGenTextures(1, &textureId);
 
-	int width, height, nrComponents;
-	unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+	glBindTexture(GL_TEXTURE_2D, textureId);
+	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
+	glGenerateMipmap(GL_TEXTURE_2D);
 
-	if (data)
-	{
-		GLenum internalFormat;
-		GLenum dataFormat;
-		if (nrComponents == 1)
-		{
-			internalFormat = dataFormat = GL_RED;
-		}
-		else if (nrComponents == 3)
-		{
-			internalFormat = gammaCorrection ? GL_SRGB : GL_RGB;
-			dataFormat = GL_RGB;
-		}
-		else if (nrComponents == 4)
-		{
-			internalFormat = gammaCorrection ? GL_SRGB_ALPHA : GL_RGBA;
-			dataFormat = GL_RGBA;
-		}
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapS);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_fliter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_fliter);
 
-		glBindTexture(GL_TEXTURE_2D, textureId);
-		glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		obj = textureId;
-		stbi_image_free(data);
-	}
-	else
-	{
-		std::cout << "Texture failed to load at path: " << path << std::endl;
-		stbi_image_free(data);
-	}
+	obj = textureId;
 }
 
 void GLH::Texture::DoUnload()
@@ -96,66 +78,101 @@ void GLH::Texture::DoUnload()
 	}
 }
 
+void GLH::Texture::SetArguments(GLenum wraps, GLenum wrapt, GLenum internalFormat, GLenum dataFormat, GLenum min_fliter, GLenum mag_fliter)
+{
+	this->wrapS = wraps;
+	this->wrapT = wrapt;
+	this->internalFormat = internalFormat;
+	this->dataFormat = dataFormat;
+	this->min_fliter = min_fliter;
+	this->mag_fliter = mag_fliter;
+}
+
 GLH::Texture::operator GLuint() const
 {
 	return this->obj;
 }
 
-GLH::CubeTexture::CubeTexture()
+GLH::CubeTexture::CubeTexture(): wrapR(GL_CLAMP_TO_EDGE)
 {
+	wrapS = GL_CLAMP_TO_EDGE;
+	wrapT = GL_CLAMP_TO_EDGE;
+	mag_fliter = GL_LINEAR;
+	min_fliter = GL_LINEAR;
 }
 
-GLH::CubeTexture::CubeTexture(const char * right, const char * left, const char * top, const char * bottom, const char * back, const char * front):cubeMapPath(6)
+void GLH::CubeTexture::load(const char * right, const char * left, const char * top, const char * bottom, const char * back, const char * front)
 {
+	std::vector<std::string> imgPath = { right, left, top, bottom, back, front };
+	std::vector<LoadImage>  cubeImgs;
+	cubeImgs.reserve(CubeMapSize);
 
-	cubeMapPath[0] = right;
-	cubeMapPath[1] = left;
-	cubeMapPath[2] = top;
-	cubeMapPath[3] = bottom;
-	cubeMapPath[4] = back;
-	cubeMapPath[5] = front;
+	int loadedWidth, loadedHeight;
+	unsigned char * image;
+	for (int i = 0; i < CubeMapSize; i++) {
+		image = nullptr;
+		image = SOIL_load_image(imgPath[i].c_str(), &loadedWidth, &loadedHeight, 0, SOIL_LOAD_RGB);
+		cubeImgs.push_back(LoadImage(image, loadedWidth, loadedHeight));
+	}
+	DoLoad(cubeImgs);
 
-	load();
-
+	// release image
+	for (int i = 0; i < CubeMapSize; i++) {
+		if (cubeImgs[i].data) stbi_image_free(cubeImgs[i].data);
+	}
 }
 
-void GLH::CubeTexture::DoLoad()
+void GLH::CubeTexture::load(const char * right, const char * left, const char * top, const char * bottom, const char * back, const char * front, GLenum wraps, GLenum wrapt, GLenum internalFormat = GL_RGB, GLenum dataFormat = GL_RGB, GLenum min_fliter = GL_LINEAR, GLenum mag_fliter = GL_LINEAR)
 {
+	SetArguments(wraps, wrapt, internalFormat, dataFormat, min_fliter, mag_fliter);
+	load(right, left,  top, bottom, back, front);
+}
+
+void GLH::CubeTexture::load(unsigned char * right_data, unsigned char * left_data, unsigned char * top_data, unsigned char * bottom_data, unsigned char * back_data, unsigned char * front_data, int width, int height)
+{
+
+	std::vector<LoadImage> cubeImgs = { LoadImage( right_data, width, height ), LoadImage(left_data, width, height), LoadImage(top_data, width, height), LoadImage(bottom_data, width, height), LoadImage(back_data, width, height), LoadImage(front_data, width, height) };
+	DoLoad(cubeImgs);
+}
+
+void GLH::CubeTexture::load(unsigned char * right_data, unsigned char * left_data, unsigned char * top_data, unsigned char * bottom_data, unsigned char * back_data, unsigned char * front_data, int width, int height, GLenum wraps, GLenum wrapt, GLenum internalFormat = GL_RGB, GLenum dataFormat = GL_RGB, GLenum min_fliter = GL_LINEAR, GLenum mag_fliter = GL_LINEAR)
+{
+	SetArguments(wraps, wrapt, internalFormat, dataFormat, min_fliter, mag_fliter);
+	load(right_data, left_data, top_data, bottom_data, back_data, front_data, width, height);
+}
+
+void GLH::CubeTexture::DoLoad(std::vector<LoadImage> cubeImgs)
+{
+	if (cubeImgs.size() != CubeMapSize) {
+		std::cout << " cube map size not correct. need : " << CubeMapSize << ". receieved : " << cubeImgs.size() << "\n";
+		return;
+	}
 
 	GLuint textureID;
 	glGenTextures(1, &textureID);
-	glActiveTexture(GL_TEXTURE0);
-
-	int width, height;
-	unsigned char * image;
 
 	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
-	for (int i = 0; i < cubeMapPath.size(); i++) {
-		image = SOIL_load_image(cubeMapPath[i].c_str(), &width, &height, 0, SOIL_LOAD_RGB);
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-		SOIL_free_image_data(image);
+	for (int i = 0; i < cubeImgs.size(); ++i) {
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, cubeImgs[i].width, cubeImgs[i].height, 0, GL_RGB, GL_UNSIGNED_BYTE, cubeImgs[i].data);
 	}
 
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, mag_fliter);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, min_fliter);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, wrapS);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, wrapT);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, wrapR);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 
 	this->obj = textureID;
-
-
 }
 
 GLH::FrameBuffer::FrameBuffer()
 {
 }
 
-GLH::FrameBuffer::FrameBuffer(TextureFormat format, unsigned int width, unsigned int height):format(format), width(width), height(height)
-{
-	load();
+GLH::FrameBuffer::FrameBuffer(TextureFormat format, unsigned int width, unsigned int height):format(format), width(width), height(height){
+
 }
 
 void GLH::FrameBuffer::DoLoad()

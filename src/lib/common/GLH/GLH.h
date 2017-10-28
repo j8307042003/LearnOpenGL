@@ -11,18 +11,35 @@
 
 
 namespace GLH {
+#define CubeMapSize 6
+
 	class Texture {
 	public:
 		unsigned int obj;
-		char * path;
-		bool gammaCorrection;
+
+		int width, height;
+
+		GLenum wrapS			= GL_REPEAT;
+		GLenum wrapT			= GL_REPEAT;
+		GLenum internalFormat	= GL_RGB;
+		GLenum dataFormat		= GL_RGB;
+		GLenum min_fliter		= GL_LINEAR_MIPMAP_LINEAR;
+		GLenum mag_fliter		= GL_LINEAR;
+
 		Texture();
-		Texture(const char * path, const bool & gammaCorrection = true);
 		~Texture();
-		void load();
+		virtual void load(char * path);
+		virtual void load(char * path, GLenum wraps, GLenum wrapt, GLenum internalFormat, GLenum dataFormat, GLenum min_fliter, GLenum mag_fliter);
+		virtual void load(unsigned char * data, int width, int height);
+		virtual void load( unsigned char * data, int width, int height, GLenum wraps, GLenum wrapt, GLenum internalFormat, GLenum dataFormat, GLenum min_fliter, GLenum mag_fliter );
+
 		void unload();
-		virtual void DoLoad();
+
+		virtual void DoLoad( unsigned char * data );
 		virtual void DoUnload();
+
+		inline void SetArguments(GLenum wraps, GLenum wrapt, GLenum internalFormat, GLenum dataFormat, GLenum min_fliter, GLenum mag_fliter);
+
 		operator GLuint() const;
 	private:
 
@@ -31,11 +48,25 @@ namespace GLH {
 	class CubeTexture : public Texture {
 	public:
 
-		std::vector<std::string> cubeMapPath;
+		struct LoadImage {
+			unsigned char * data;
+			int width;
+			int height;
+			LoadImage(unsigned char * data, int width, int height) : data(data), width(width), height(height) {}
+		};
+
+		GLenum wrapR = GL_CLAMP_TO_EDGE;
 
 		CubeTexture();
-		CubeTexture(const char * right, const char * left, const char * top, const char * bottom, const char * back, const char * front);
-		void DoLoad();
+
+
+		void load(const char * right, const char * left, const char * top, const char * bottom, const char * back, const char * front);
+		void load(const char * right, const char * left, const char * top, const char * bottom, const char * back, const char * front, GLenum wraps, GLenum wrapt, GLenum internalFormat, GLenum dataFormat, GLenum min_fliter, GLenum mag_fliter);
+
+		void load(unsigned char * right_data, unsigned char * left_data, unsigned char * top_data, unsigned char * bottom_data, unsigned char * back_data, unsigned char * front_data, int width, int height);
+		void load(unsigned char * right_data, unsigned char * left_data, unsigned char * top_data, unsigned char * bottom_data, unsigned char * back_data, unsigned char * front_data, int width, int height, GLenum wraps, GLenum wrapt, GLenum internalFormat, GLenum dataFormat, GLenum min_fliter, GLenum mag_fliter);
+
+		void DoLoad( std::vector<LoadImage> cubeImgs );
 	};
 
 	enum TextureFormat
