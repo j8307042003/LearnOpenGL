@@ -28,8 +28,10 @@ namespace GLH {
 
 		Texture();
 		~Texture();
+		virtual void load(char * path);
 		virtual void load(char * path, bool useDefault);
 		virtual void load(char * path, GLenum wraps, GLenum wrapt, GLenum internalFormat, GLenum dataFormat, GLenum min_fliter, GLenum mag_fliter);
+		virtual void load(unsigned char * data, int width, int height);
 		virtual void load(unsigned char * data, int width, int height, bool useDefault);
 		virtual void load( unsigned char * data, int width, int height, GLenum wraps, GLenum wrapt, GLenum internalFormat, GLenum dataFormat, GLenum min_fliter, GLenum mag_fliter );
 
@@ -60,6 +62,7 @@ namespace GLH {
 		CubeTexture();
 		~CubeTexture();
 
+		void load(const char * right, const char * left, const char * top, const char * bottom, const char * back, const char * front);
 		void load(const char * right, const char * left, const char * top, const char * bottom, const char * back, const char * front, bool useDefault);
 		void load(const char * right, const char * left, const char * top, const char * bottom, const char * back, const char * front, GLenum wraps, GLenum wrapt, GLenum internalFormat, GLenum dataFormat, GLenum min_fliter, GLenum mag_fliter);
 

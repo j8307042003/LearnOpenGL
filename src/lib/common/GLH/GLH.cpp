@@ -19,11 +19,16 @@ GLH::Texture::~Texture()
 	unload();
 }
 
+void GLH::Texture::load(char * path)
+{
+	load(path, true);
+}
+
 void GLH::Texture::load(char * path, bool useDefault = true)
 {
 	if (useDefault)SetDefaultArgument();
 	unsigned char * data = stbi_load(path, &width, &height, 0, SOIL_LOAD_RGB);
-	load(data, width, height);
+	load(data, width, height, false);
 	if (data) stbi_image_free(data);
 }
 
@@ -31,6 +36,11 @@ void GLH::Texture::load(char * path, GLenum wraps, GLenum wrapt, GLenum internal
 {
 	SetArguments(wraps, wrapt, internalFormat, dataFormat, min_fliter, mag_fliter);
 	load(path, false);
+}
+
+void GLH::Texture::load(unsigned char * data, int width, int height)
+{
+	load(data, width, height, true);
 }
 
 void GLH::Texture::load(unsigned char * data, int width, int height, bool useDefault = true)
@@ -120,7 +130,12 @@ GLH::CubeTexture::~CubeTexture()
 	unload();
 }
 
-void GLH::CubeTexture::load(const char * right, const char * left, const char * top, const char * bottom, const char * back, const char * front, bool useDefault = true) 
+void GLH::CubeTexture::load(const char * right, const char * left, const char * top, const char * bottom, const char * back, const char * front)
+{
+	load(right, left, top, bottom, back, front, true);
+}
+
+void GLH::CubeTexture::load(const char * right, const char * left, const char * top, const char * bottom, const char * back, const char * front, bool useDefault = true)
 {
 	if (useDefault) SetDefaultArgument();
 	std::vector<std::string> imgPath = { right, left, top, bottom, back, front };
