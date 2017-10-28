@@ -163,6 +163,11 @@ void GLH::CubeTexture::load(const char * right, const char * left, const char * 
 	load(right, left,  top, bottom, back, front, false);
 }
 
+void GLH::CubeTexture::load(unsigned char * right_data, unsigned char * left_data, unsigned char * top_data, unsigned char * bottom_data, unsigned char * back_data, unsigned char * front_data, int width, int height)
+{
+	load(right_data, left_data, top_data, bottom_data, back_data, front_data, width, height, true);
+}
+
 void GLH::CubeTexture::load(unsigned char * right_data, unsigned char * left_data, unsigned char * top_data, unsigned char * bottom_data, unsigned char * back_data, unsigned char * front_data, int width, int height, bool useDefault = true)
 {
 	if (useDefault )SetDefaultArgument();
