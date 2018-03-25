@@ -32,9 +32,9 @@ void GLH::Texture::load(char * path, bool useDefault = true)
 	if (data) stbi_image_free(data);
 }
 
-void GLH::Texture::load(char * path, GLenum wraps, GLenum wrapt, GLenum internalFormat = GL_RGB, GLenum dataFormat = GL_RGB, GLenum min_fliter = GL_LINEAR_MIPMAP_LINEAR, GLenum mag_fliter = GL_LINEAR)
+void GLH::Texture::load(char * path, GLenum wraps, GLenum wrapt, GLenum internalFormat = GL_RGB, GLenum dataFormat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum min_fliter = GL_LINEAR_MIPMAP_LINEAR, GLenum mag_fliter = GL_LINEAR)
 {
-	SetArguments(wraps, wrapt, internalFormat, dataFormat, min_fliter, mag_fliter);
+	SetArguments(wraps, wrapt, internalFormat, dataFormat, type, min_fliter, mag_fliter);
 	load(path, false);
 }
 
@@ -52,9 +52,9 @@ void GLH::Texture::load(unsigned char * data, int width, int height, bool useDef
 	DoLoad( data );
 }
 
-void GLH::Texture::load(unsigned char * data, int width, int height, GLenum wraps, GLenum wrapt, GLenum internalFormat = GL_RGB, GLenum dataFormat = GL_RGB, GLenum min_fliter = GL_LINEAR_MIPMAP_LINEAR, GLenum mag_fliter = GL_LINEAR)
+void GLH::Texture::load(unsigned char * data, int width, int height, GLenum wraps, GLenum wrapt, GLenum internalFormat = GL_RGB, GLenum dataFormat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum min_fliter = GL_LINEAR_MIPMAP_LINEAR, GLenum mag_fliter = GL_LINEAR)
 {
-	SetArguments(wraps, wrapt, internalFormat, dataFormat, min_fliter, mag_fliter);
+	SetArguments(wraps, wrapt, internalFormat, dataFormat, type, min_fliter, mag_fliter);
 	load(data, width, height, false);
 }
 
@@ -91,12 +91,13 @@ void GLH::Texture::DoUnload()
 	}
 }
 
-void GLH::Texture::SetArguments(GLenum wraps, GLenum wrapt, GLenum internalFormat, GLenum dataFormat, GLenum min_fliter, GLenum mag_fliter)
+void GLH::Texture::SetArguments(GLenum wraps, GLenum wrapt, GLenum internalFormat, GLenum dataFormat, GLenum type, GLenum min_fliter, GLenum mag_fliter)
 {
 	this->wrapS = wraps;
 	this->wrapT = wrapt;
 	this->internalFormat = internalFormat;
 	this->dataFormat = dataFormat;
+	this->type = type;
 	this->min_fliter = min_fliter;
 	this->mag_fliter = mag_fliter;
 }
@@ -108,6 +109,7 @@ inline void GLH::Texture::SetDefaultArgument()
 	wrapT = GL_REPEAT;
 	internalFormat = GL_RGB;
 	dataFormat = GL_RGB;
+	type = GL_UNSIGNED_BYTE;
 	min_fliter = GL_LINEAR_MIPMAP_LINEAR;
 	mag_fliter = GL_LINEAR;
 }
@@ -157,9 +159,9 @@ void GLH::CubeTexture::load(const char * right, const char * left, const char * 
 	}
 }
 
-void GLH::CubeTexture::load(const char * right, const char * left, const char * top, const char * bottom, const char * back, const char * front, GLenum wraps, GLenum wrapt, GLenum internalFormat = GL_RGB, GLenum dataFormat = GL_RGB, GLenum min_fliter = GL_LINEAR, GLenum mag_fliter = GL_LINEAR)
+void GLH::CubeTexture::load(const char * right, const char * left, const char * top, const char * bottom, const char * back, const char * front, GLenum wraps, GLenum wrapt, GLenum wrapr,GLenum internalFormat = GL_RGB, GLenum dataFormat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum min_fliter = GL_LINEAR, GLenum mag_fliter = GL_LINEAR)
 {
-	SetArguments(wraps, wrapt, internalFormat, dataFormat, min_fliter, mag_fliter);
+	SetArguments(wraps, wrapt, wrapr, internalFormat, dataFormat, type, min_fliter, mag_fliter);
 	load(right, left,  top, bottom, back, front, false);
 }
 
@@ -175,9 +177,9 @@ void GLH::CubeTexture::load(unsigned char * right_data, unsigned char * left_dat
 	DoLoad(cubeImgs);
 }
 
-void GLH::CubeTexture::load(unsigned char * right_data, unsigned char * left_data, unsigned char * top_data, unsigned char * bottom_data, unsigned char * back_data, unsigned char * front_data, int width, int height, GLenum wraps, GLenum wrapt, GLenum internalFormat = GL_RGB, GLenum dataFormat = GL_RGB, GLenum min_fliter = GL_LINEAR, GLenum mag_fliter = GL_LINEAR)
+void GLH::CubeTexture::load(unsigned char * right_data, unsigned char * left_data, unsigned char * top_data, unsigned char * bottom_data, unsigned char * back_data, unsigned char * front_data, int width, int height, GLenum wraps, GLenum wrapt, GLenum wrapr, GLenum internalFormat = GL_RGB, GLenum dataFormat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum min_fliter = GL_LINEAR, GLenum mag_fliter = GL_LINEAR)
 {
-	SetArguments(wraps, wrapt, internalFormat, dataFormat, min_fliter, mag_fliter);
+	SetArguments(wraps, wrapt, wrapr, internalFormat, dataFormat, type, min_fliter, mag_fliter);
 	load(right_data, left_data, top_data, bottom_data, back_data, front_data, width, height, false);
 }
 
@@ -197,7 +199,7 @@ void GLH::CubeTexture::DoLoad(std::vector<LoadImage> cubeImgs)
 	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
 	for (int i = 0; i < cubeImgs.size(); ++i) {
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, cubeImgs[i].width, cubeImgs[i].height, 0, GL_RGB, GL_UNSIGNED_BYTE, cubeImgs[i].data);
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, cubeImgs[i].width, cubeImgs[i].height, 0, dataFormat, type, cubeImgs[i].data);
 	}
 
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, mag_fliter);
@@ -210,12 +212,25 @@ void GLH::CubeTexture::DoLoad(std::vector<LoadImage> cubeImgs)
 	this->obj = textureID;
 }
 
+inline void GLH::CubeTexture::SetArguments(GLenum wraps, GLenum wrapt, GLenum wrapr, GLenum internalFormat, GLenum dataFormat, GLenum type, GLenum min_fliter, GLenum mag_fliter)
+{
+	this->wrapS = wraps;
+	this->wrapT = wrapt;
+	this->wrapR = wrapr;
+	this->internalFormat = internalFormat;
+	this->dataFormat = dataFormat;
+	this->type = type;
+	this->min_fliter = min_fliter;
+	this->mag_fliter = mag_fliter;
+}
+
 inline void GLH::CubeTexture::SetDefaultArgument()
 {
 	width = height = 0;
 	wrapS = GL_CLAMP_TO_EDGE;
 	wrapT = GL_CLAMP_TO_EDGE;
 	wrapR = GL_CLAMP_TO_EDGE;
+	type = GL_UNSIGNED_BYTE;
 	mag_fliter = GL_LINEAR;
 	min_fliter = GL_LINEAR;
 	internalFormat = GL_RGB;

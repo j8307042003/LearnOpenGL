@@ -3,6 +3,9 @@
 	[
 		{
 			"path": "."
+		},
+		{
+			"path": "D:\\programming\\c++\\gameEngine\\wickedEngine\\WickedEngine"
 		}
 	]
 }

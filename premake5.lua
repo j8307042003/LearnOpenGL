@@ -23,7 +23,8 @@ local consoleApps = {
 "helloGPUInstancing",
 "helloBlinnPhong",
 "helloShadow",
-"helloSSR"
+"helloSSR",
+"helloPointShadow",
 
 }
 
