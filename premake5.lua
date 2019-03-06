@@ -2,6 +2,9 @@
 
 local solutionName = "OpenGLGraphicLearn"
 
+local function GetSystemversion()
+  return '10.0.17763.0'
+end
 
 -- windows application
 local winApps = {
@@ -25,6 +28,8 @@ local consoleApps = {
 "helloShadow",
 "helloSSR",
 "helloPointShadow",
+"helloDeferredShading",
+"helloSponza"
 
 }
 
@@ -69,25 +74,37 @@ local libFiles =
 -- http://industriousone.com/flags
 local debugFlags =
 {
-  "Symbols",
   "NoMinimalRebuild",
-  "NoEditAndContinue",
-  "WinMain"
 }
+
+local debugFlagsFunc = function()
+  symbols "On"
+  editandcontinue "Off"
+  entrypoint "mainCRTStartup"
+end
+
+
 local releaseFlags =
 {
-  "Symbols",
   "NoMinimalRebuild",
-  "NoEditAndContinue",
-  "WinMain"
 }
+
+local releaseFlagsFunc = function()
+  symbols "On"
+  editandcontinue "Off"
+  entrypoint "mainCRTStartup"
+end
+
 local shipFlags =
 {
-  "Symbols", 
   "NoMinimalRebuild",
-  "NoEditAndContinue",
-  "WinMain"
 }
+
+local shipFlagsFunc = function()
+  symbols "On"
+  editandcontinue "Off"
+  entrypoint "mainCRTStartup"
+end
 
 -- Table of linker options
 local linkerOptions = 
@@ -161,6 +178,7 @@ end
 local allProjectIncludeDirs = {}
 function SetUpProj(projName, projType, locPath, pchFile, fileDir, outDir)
   kind(projType)
+  -- print(projType)
   language("C++")
   location(locPath)
   libdirs(libDirs)
@@ -170,7 +188,7 @@ function SetUpProj(projName, projType, locPath, pchFile, fileDir, outDir)
   architecture("x64")
   includedirs(fileDir)
   links(ReadDependencies(fileDir .. "/dependencies.txt"))
-  
+  systemversion(GetSystemversion())
   -- recursively scan project directory
   directories = {fileDir}
   FindDirectoriesRecursive(directories, fileDir)
@@ -236,6 +254,7 @@ function SetUpProj(projName, projType, locPath, pchFile, fileDir, outDir)
     optimize("Off")
     targetname(projName .. "_debug")
     defines(debugDefines)
+    debugFlagsFunc()
     flags(debugFlags)
     targetdir(outDir)
 
@@ -244,6 +263,7 @@ function SetUpProj(projName, projType, locPath, pchFile, fileDir, outDir)
     optimize("Speed")
     targetname(projName .. "_release")
     defines(releaseDefines)
+    releaseFlagsFunc()
     flags(releaseFlags)
     targetdir(outDir)
 
@@ -252,6 +272,7 @@ function SetUpProj(projName, projType, locPath, pchFile, fileDir, outDir)
     optimize("Full")
     targetname(projName)
     defines(shipDefines)
+    shipFlagsFunc()
     flags(shipFlags)
     targetdir(outDir)
 end
